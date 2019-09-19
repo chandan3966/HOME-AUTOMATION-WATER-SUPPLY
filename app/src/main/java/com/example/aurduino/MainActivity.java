@@ -100,6 +100,8 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
         value1= findViewById(R.id.value1);
         locate= findViewById(R.id.location);
         value2 = findViewById(R.id.value2);
+        time1= findViewById(R.id.time1);
+        time2= findViewById(R.id.time2);
         progressBar = findViewById(R.id.progressBar);
         b = findViewById(R.id.button);
     }
@@ -151,31 +153,26 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
         progressBar.setVisibility(View.VISIBLE);
 
         //creating a string request to send request to the url
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, "https://io.adafruit.com/rohinivsenthil/feeds/hello",
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, "https://io.adafruit.com/api/v2/rohinivsenthil/feeds/hello",
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
                         //hiding the progressbar after completion
                         progressBar.setVisibility(View.INVISIBLE);
-
+                        Log.d("response", response);
 
                         try {
                             //getting the whole json object from the response
                             JSONObject obj = new JSONObject(response);
+                            Log.d("json", "onResponse: "+obj);
 
-                            //we have the array named hero inside the object
-                            //so here we are getting that json array
-                            JSONArray heroArray = obj.getJSONArray("fruits");
-
-                            //now looping through all the elements of the json array
-                            for (int i = 0; i < heroArray.length(); i++) {
-                                //getting the json object of the particular index inside the array
-//                                JSONObject heroObject = heroArray.getJSONObject(i);
 
                                 //creating a hero object and giving them the values from json object
-                                value1.setText(heroArray.getString(i));
-                                value2.setText(heroArray.getString(i));
-                            }
+                                value1.setText(obj.getString("last_value")+"Bpm");
+                                value2.setText(obj.getString("last_value")+"*F");
+                                time1.setText(obj.getString("updated_at"));
+                                time2.setText(obj.getString("updated_at"));
+
 
                         } catch (JSONException e) {
                             e.printStackTrace();

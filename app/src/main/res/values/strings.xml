@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Aurduino</string>
 
-    <string name="google_maps_keys" translatable="false"
-        templateMergeStrategy="preserve"> AIzaSyAOtdAvnDxVuSFa0Q9oN2zL5lbj3s78nIM </string>
+    <string name="google_maps_keys" templateMergeStrategy="preserve" translatable="false"> AIzaSyAOtdAvnDxVuSFa0Q9oN2zL5lbj3s78nIM </string>
 </resources>
