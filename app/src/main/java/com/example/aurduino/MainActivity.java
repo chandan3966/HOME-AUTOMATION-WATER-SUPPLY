@@ -43,7 +43,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-public class MainActivity extends FragmentActivity implements LocationListener, OnMapReadyCallback {
+public class MainActivity extends FragmentActivity implements LocationListener {
 
     TextView time1, time2, value1, value2,locate;
     SupportMapFragment mapFragment;
@@ -61,29 +61,13 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         declarations();
-        mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+//        mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+//        mapFragment.getMapAsync(this);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this);
-
-    }
-
-
-
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-
-        mMap = googleMap;
-        Toast.makeText(this, "OnMapReady", Toast.LENGTH_SHORT).show();
-
-        LatLng home = new LatLng(11.0168, 76.9558);
-        float zoomLevel = (float) 5.0;
-        mMap.addMarker(new MarkerOptions().position(home).title("You are at here!!!"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home, zoomLevel));
 
         b.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -110,19 +94,12 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
 
     @Override
     public void onLocationChanged(Location location) {
-        LatLng home = new LatLng(location.getLatitude(), location.getLongitude());
-        float zoomLevel = (float) 5.0;
-
-        mMap.addMarker(new MarkerOptions().position(home).title("You are at here now!!!"));
-
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home, zoomLevel));
-
         Geocoder geocoder;
         List<Address> addresses;
         geocoder = new Geocoder(this, Locale.getDefault());
 
         try {
-            addresses = geocoder.getFromLocation(11.0168, 76.9558, 1);
+            addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
             String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
             Address = address;
         } catch (IOException e) {
@@ -166,13 +143,17 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
                             JSONObject obj = new JSONObject(response);
                             Log.d("json", "onResponse: "+obj);
 
-
                                 //creating a hero object and giving them the values from json object
-                                value1.setText(obj.getString("last_value")+"Bpm");
-                                value2.setText(obj.getString("last_value")+"*F");
-                                time1.setText(obj.getString("updated_at"));
-                                time2.setText(obj.getString("updated_at"));
+                            value1.setText(obj.getString("last_value")+"Bpm");
+                            time1.setText(obj.getString("updated_at"));
+                            int p = Integer.parseInt(obj.getString("last_value"));
 
+                            if(p == 0){
+                                Assign(obj.getString("last_value"),obj.getString("updated_at"));
+                            }
+                            else{
+                                Assign(100+"",obj.getString("updated_at"));
+                            }
 
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -192,6 +173,11 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
 
         //adding the string request to request queue
         requestQueue.add(stringRequest);
+    }
+
+    private void Assign(String val,String time){
+        value1.setText(val+"%");
+        time1.setText(time);
     }
 
 }
