@@ -1,42 +1,33 @@
 package com.example.aurduino;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
-import com.google.android.gms.maps.CameraUpdateFactory;
+import com.example.aurduino.backConnection.GetService;
+import com.example.aurduino.backConnection.PostService;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -50,10 +41,12 @@ public class MainActivity extends FragmentActivity implements LocationListener {
     ProgressBar progressBar;
     protected LocationManager locationManager;
 
+    int val=0;
     Button b;
     private GoogleMap mMap;
     String Address;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
+    BroadcastReceiver br;
 
 
     @Override
@@ -69,16 +62,42 @@ public class MainActivity extends FragmentActivity implements LocationListener {
         }
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this);
 
-        b.setOnClickListener(new View.OnClickListener() {
+//        b=findViewById(R.id.refreshButton);
+//        b.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                loadHeroList();
+//            }
+//        });
+
+        br=new BroadcastReceiver() {
             @Override
-            public void onClick(View v) {
-                loadHeroList();
+            public void onReceive(Context context, Intent intent) {
+                String data = intent.getStringExtra("data");
+                progressBar.setVisibility(View.INVISIBLE);
+                int p=0;
+                try{
+                    JSONArray ja = new JSONArray(data);
+                    JSONObject obj = ja.getJSONObject(0);
+                    if(p == 0){
+                        Assign(obj.getString("value"),obj.getString("created_at"));
+                    }
+                    else{
+                        Assign(100+"",obj.getString("updated_at"));
+                    }
+                }catch(Exception e){e.printStackTrace();}
             }
-        });
+        };
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(br,new IntentFilter("getData"));
 
     }
 
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(br);
+    }
 
     public void declarations(){
         value1= findViewById(R.id.value1);
@@ -87,7 +106,7 @@ public class MainActivity extends FragmentActivity implements LocationListener {
         time1= findViewById(R.id.time1);
         time2= findViewById(R.id.time2);
         progressBar = findViewById(R.id.progressBar);
-        b = findViewById(R.id.button);
+        b = findViewById(R.id.refreshButton);
     }
 
 
@@ -109,6 +128,19 @@ public class MainActivity extends FragmentActivity implements LocationListener {
         locate.setText(Address);
     }
 
+    public void fun(View v){
+        Intent i = new Intent(this, PostService.class);
+        if(val==0) val=1023;
+        else val=0;
+        try{
+            JSONObject j = new JSONObject();
+            j.put("value",val);
+            i.putExtra("data",j.toString());
+        }catch(Exception e){e.printStackTrace();}
+        i.putExtra("feed","manual");
+        startService(i);
+    }
+
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
 
@@ -124,55 +156,14 @@ public class MainActivity extends FragmentActivity implements LocationListener {
 
     }
 
-    private void loadHeroList() {
+    public void fun2(View v) {
         //getting the progressbar
         //making the progressbar visible
         progressBar.setVisibility(View.VISIBLE);
+        Intent i = new Intent(this, GetService.class);
+        i.putExtra("feed","motor");
+        startService(i);
 
-        //creating a string request to send request to the url
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, "https://io.adafruit.com/api/v2/rohinivsenthil/feeds/hello",
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        //hiding the progressbar after completion
-                        progressBar.setVisibility(View.INVISIBLE);
-                        Log.d("response", response);
-
-                        try {
-                            //getting the whole json object from the response
-                            JSONObject obj = new JSONObject(response);
-                            Log.d("json", "onResponse: "+obj);
-
-                                //creating a hero object and giving them the values from json object
-                            value1.setText(obj.getString("last_value")+"Bpm");
-                            time1.setText(obj.getString("updated_at"));
-                            int p = Integer.parseInt(obj.getString("last_value"));
-
-                            if(p == 0){
-                                Assign(obj.getString("last_value"),obj.getString("updated_at"));
-                            }
-                            else{
-                                Assign(100+"",obj.getString("updated_at"));
-                            }
-
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        //displaying the error in toast if occurrs
-                        Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-
-        //creating a request queue
-        RequestQueue requestQueue = Volley.newRequestQueue(this);
-
-        //adding the string request to request queue
-        requestQueue.add(stringRequest);
     }
 
     private void Assign(String val,String time){
