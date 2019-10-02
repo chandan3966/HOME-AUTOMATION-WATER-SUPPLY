@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
+import me.itangqi.waveloadingview.WaveLoadingView;
+
 public class MainActivity extends FragmentActivity implements LocationListener {
 
     TextView time1, time2, value1, value2,locate;
@@ -41,7 +43,8 @@ public class MainActivity extends FragmentActivity implements LocationListener {
     protected LocationManager locationManager;
 
     int val=0;
-    Button b;
+    WaveLoadingView waveLoadingView;
+    Button b,b2;
     private GoogleMap mMap;
     String Address;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
@@ -53,8 +56,6 @@ public class MainActivity extends FragmentActivity implements LocationListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         declarations();
-//        mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
-//        mapFragment.getMapAsync(this);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
@@ -68,6 +69,7 @@ public class MainActivity extends FragmentActivity implements LocationListener {
 //                loadHeroList();
 //            }
 //        });
+        waveLoadingView.setProgressValue(50);
 
         br=new BroadcastReceiver() {
             @Override
@@ -104,8 +106,10 @@ public class MainActivity extends FragmentActivity implements LocationListener {
         value2 = findViewById(R.id.value2);
         time1= findViewById(R.id.time1);
         time2= findViewById(R.id.time2);
+        b2 = findViewById(R.id.button2);
         progressBar = findViewById(R.id.progressBar);
         b = findViewById(R.id.refreshButton);
+        waveLoadingView = findViewById(R.id.waveLoadingView);
     }
 
 
@@ -129,8 +133,21 @@ public class MainActivity extends FragmentActivity implements LocationListener {
 
     public void fun(View v){
         Intent i = new Intent(this, PostService.class);
-        if(val==0) val=1023;
-        else val=0;
+        if(val==0) {
+            val=1;
+            b2.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+            b2.setTextColor(getResources().getColor(R.color.white));
+
+
+        }
+        else {
+            val=0;
+
+            b2.setBackgroundColor(getResources().getColor(R.color.white));
+            b2.setTextColor(getResources().getColor(R.color.black));
+
+        }
+
         try{
             JSONObject j = new JSONObject();
             j.put("value",val);
