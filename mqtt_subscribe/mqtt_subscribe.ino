@@ -8,12 +8,12 @@ const char* password = "9666459542";
 
 // Set MQTT Server, User name and password details below
 #define MQTT_SERVER      "io.adafruit.com"
-#define MQTT_USERNAME    "rohinivsenthil"
-#define MQTT_PASSWORD    "386d4c1e3b9645c985c680355889c4a4"
+#define MQTT_USERNAME    "chandan3966"
+#define MQTT_PASSWORD    "7dbe3f897e5941eba1a06ba39c5093c4"
 #define MQTT_SERVERPORT  1883
-#define SUBSCRIBE_TOPIC  "rohinivsenthil/feeds/hello"
+#define SUBSCRIBE_TOPIC  "chandan3966/feeds/hello"
 
-#define RELAY_PIN         5
+#define RELAY_PIN  5
 
 // Create an ESP8266 WiFiClient class to connect to the MQTT server.
 WiFiClient client;
@@ -84,14 +84,12 @@ void loop() {
       
       if ( strcmp((char *)onoffbutton.lastread, "1023") == 0)
       {
-        digitalWrite(RELAY_PIN,HIGH);
-        Serial.println("HIGH");
-      }
-      if ( strcmp((char *)onoffbutton.lastread, "0") == 0)
-      {
-        
-        digitalWrite(RELAY_PIN,LOW);
+         digitalWrite(RELAY_PIN,LOW);
         Serial.println("LOW");
+      }
+      else{
+           digitalWrite(RELAY_PIN,HIGH);
+           Serial.println("HIGH");
       }
     }
   }
