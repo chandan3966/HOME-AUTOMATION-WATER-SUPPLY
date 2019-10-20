@@ -32,6 +32,7 @@ public class GetService extends IntentService {
 
             url+=feed+"/data?x-aio-key=7dbe3f897e5941eba1a06ba39c5093c4&limit=1";
 
+
             fun();
              Intent i = new Intent("getData");
              i.putExtra("data",result);
