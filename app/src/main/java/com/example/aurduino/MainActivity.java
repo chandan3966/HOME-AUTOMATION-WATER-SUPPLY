@@ -1,10 +1,13 @@
 package com.example.aurduino;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import android.Manifest;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -18,6 +21,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -37,17 +41,21 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import me.itangqi.waveloadingview.WaveLoadingView;
 
 public class MainActivity extends FragmentActivity implements LocationListener {
 
     TextView time1, time2, value1, value2,locate;
+    Timer timer;
     SupportMapFragment mapFragment;
     ProgressBar progressBar;
     protected LocationManager locationManager;
-
-    int val=0;
+    int cou = 0,cou1 = 0;
+    String val="";
+    boolean but = false;
     WaveLoadingView waveLoadingView;
     Button b,b2;
     private GoogleMap mMap;
@@ -60,6 +68,7 @@ public class MainActivity extends FragmentActivity implements LocationListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         if (Build.VERSION.SDK_INT >= 21){
             Window window = this.getWindow();
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
@@ -68,6 +77,7 @@ public class MainActivity extends FragmentActivity implements LocationListener {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         }
         declarations();
+        progressBar.setVisibility(View.VISIBLE);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
@@ -75,24 +85,26 @@ public class MainActivity extends FragmentActivity implements LocationListener {
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this);
 
 
+                br=new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        String data = intent.getStringExtra("data");
+                        progressBar.setVisibility(View.INVISIBLE);
+                        int p=0;
+                        try{
+                            JSONArray ja = new JSONArray(data);
+                            JSONObject obj = ja.getJSONObject(0);
+                            Assign(obj.getString("value"),obj.getString("created_at"));
+
+                        }catch(Exception e){e.printStackTrace();}
+                    }
+                };
+        Intent i1 = new Intent(this, GetService.class);
+        i1.putExtra("feed","ultrasonic");
+        startService(i1);
 
 
-        br=new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String data = intent.getStringExtra("data");
-                progressBar.setVisibility(View.INVISIBLE);
-                int p=0;
-                try{
-                    JSONArray ja = new JSONArray(data);
-                    JSONObject obj = ja.getJSONObject(0);
-                    Assign(obj.getString("value"),obj.getString("updated_at"));
-
-                }catch(Exception e){e.printStackTrace();}
-            }
-        };
-
-        LocalBroadcastManager.getInstance(this).registerReceiver(br,new IntentFilter("getData"));
+        LocalBroadcastManager.getInstance(MainActivity.this).registerReceiver(br,new IntentFilter("getData"));
 
 
     }
@@ -101,6 +113,7 @@ public class MainActivity extends FragmentActivity implements LocationListener {
     protected void onDestroy() {
         super.onDestroy();
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(br);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(br1);
 
     }
 
@@ -116,20 +129,6 @@ public class MainActivity extends FragmentActivity implements LocationListener {
         waveLoadingView = findViewById(R.id.waveLoadingView);
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        progressBar.setVisibility(View.VISIBLE);
-        Intent i = new Intent(this, GetService.class);
-        i.putExtra("feed","manual");
-        startService(i);
-
-//        Intent i1 = new Intent(this, GetService.class);
-//        i1.putExtra("feed","manual");
-//        startService(i);
-
-    }
 
     @Override
     public void onLocationChanged(Location location) {
@@ -150,20 +149,8 @@ public class MainActivity extends FragmentActivity implements LocationListener {
 
     public void fun(View v){
         Intent i = new Intent(this, PostService.class);
-        if(val==0) {
-            val=1023;
-            b2.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
-            b2.setTextColor(getResources().getColor(R.color.white));
 
-
-        }
-        else {
-            val=0;
-
-            b2.setBackgroundColor(getResources().getColor(R.color.white));
-            b2.setTextColor(getResources().getColor(R.color.black));
-
-        }
+        colorDecider();
 
         try{
             JSONObject j = new JSONObject();
@@ -194,18 +181,133 @@ public class MainActivity extends FragmentActivity implements LocationListener {
         //making the progressbar visible
         progressBar.setVisibility(View.VISIBLE);
         Intent i = new Intent(this, GetService.class);
-        i.putExtra("feed","hello");
+        i.putExtra("feed","ultrasonic");
         startService(i);
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                br1=new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        String data = intent.getStringExtra("data");
+                        progressBar.setVisibility(View.INVISIBLE);
+                        int p=0;
+                        try{
+                            JSONArray ja = new JSONArray(data);
+                            JSONObject obj = ja.getJSONObject(0);
+                            val = obj.getString("value");
+                            but = true;
+                            Toast.makeText(getApplicationContext(),obj.getString("value"),Toast.LENGTH_SHORT).show();
+                            if (val.equals("on")){
+                                b2.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+                                b2.setTextColor(getResources().getColor(R.color.white));
+                            }
+                            else{
+                                b2.setBackgroundColor(getResources().getColor(R.color.white));
+                                b2.setTextColor(getResources().getColor(R.color.black));
+                            }
+
+                        }catch(Exception e){e.printStackTrace();}
+                    }
+                };
+
+
+                Intent i = new Intent(getApplicationContext(), GetService.class);
+                i.putExtra("feed","manual");
+                startService(i);
+
+                LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(br1,new IntentFilter("getData"));
+            }
+        },3000);
 
     }
 
     private void Assign(String val,String time){
-        value1.setText(Calc(Integer.parseInt(val))+"%");
+        int ji1 = (int) Calc((double) Integer.parseInt(val));
+        ji1 = 100 - ji1;
+        if (ji1>=80){
+            waveLoadingView.setWaveColor(Color.GREEN);
+            if (ji1>=88){
+                waveLoadingView.setCenterTitle("Full");
+                if (cou == 0)
+                fullNotifications(ji1);
+                cou++;
+            }
+            else{
+                waveLoadingView.setCenterTitle(ji1+"%");
+            }
+        }
+        else if(ji1 <80 && ji1 >= 60){
+            waveLoadingView.setWaveColor(R.color.lightblue);
+            waveLoadingView.setCenterTitle(ji1+"%");
+        }
+        else if(ji1 < 60 && ji1 >= 40){
+            waveLoadingView.setWaveColor(Color.YELLOW);
+            waveLoadingView.setCenterTitle(ji1+"%");
+        }
+        else if(ji1 < 40 && ji1 >= 20){
+            waveLoadingView.setWaveColor(Color.CYAN);
+            waveLoadingView.setCenterTitle(ji1+"%");
+        }
+        else{
+            waveLoadingView.setWaveColor(Color.RED);
+            waveLoadingView.setCenterTitle(ji1+"%");
+            if (cou1 == 0)
+                emptyNotifications(ji1);
+            cou1++;
+        }
+        value1.setText(ji1+"%");
         time1.setText(time);
-        waveLoadingView.setProgressValue(Calc(Integer.parseInt(val)));
+
+        waveLoadingView.setProgressValue(ji1);
     }
 
-    private int Calc(int value){
-        return (value/1023)*100;
+    private double Calc(Double i){
+        return ((i/(double) 140)*100);
     }
+
+    private void fullNotifications(int per){
+        NotificationCompat.Builder builder1 = new NotificationCompat.Builder(this)
+                .setContentTitle("Watanker Alert")
+                .setContentText("Your tank has reached "+per+"% so turn off");
+
+        Intent i = new Intent(this,MainActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(this,0,i,PendingIntent.FLAG_UPDATE_CURRENT);
+        builder1.setContentIntent(contentIntent);
+
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        manager.notify(0,builder1.build());
+    }
+
+    private void emptyNotifications(int per){
+        NotificationCompat.Builder builder1 = new NotificationCompat.Builder(this)
+                .setContentTitle("Watanker Alert")
+                .setContentText("Your tank has reached "+per+"% so turn on");
+
+        Intent i = new Intent(this,MainActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(this,0,i,PendingIntent.FLAG_UPDATE_CURRENT);
+        builder1.setContentIntent(contentIntent);
+
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        manager.notify(0,builder1.build());
+    }
+
+    private void colorDecider(){
+        if(val.equals("on")) {
+
+            val="off";
+
+            b2.setBackgroundColor(getResources().getColor(R.color.white));
+            b2.setTextColor(getResources().getColor(R.color.black));
+
+        }
+        else {
+            val="on";
+            b2.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+            b2.setTextColor(getResources().getColor(R.color.white));
+
+        }
+    }
+
+
 }
